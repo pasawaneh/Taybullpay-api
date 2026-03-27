@@ -21,7 +21,7 @@ export async function up(pool: Pool): Promise<void> {
       -- Environment
       ('ENVIRONMENT', 'UAT', 'Current environment: UAT or PROD', 'environment'),
       ('CBS_NAME', 'Taybullpay', 'Core Banking System name', 'environment'),
-      ('FSP_ID', 'gisp_fsp', 'Financial Service Provider ID', 'environment'),
+      ('FSP_ID', 'Taybull', 'Financial Service Provider ID', 'environment'),
       ('CURRENCY', 'GMD', 'Operating currency', 'environment'),
       ('SUPPORTED_ID_TYPE', 'MSISDN', 'Supported party ID type', 'environment'),
 

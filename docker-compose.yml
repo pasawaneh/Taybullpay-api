@@ -147,7 +147,7 @@ services:
       BULK_TRANSFERS_ENDPOINT: ttk:4040
       TRANSACTION_REQUESTS_ENDPOINT: ttk:4040
       # DFSP identity
-      DFSP_ID: gisp_fsp
+      DFSP_ID: Taybull
       # ILP
       ILP_SECRET: secret
       CHECK_ILP: false
@@ -258,7 +258,7 @@ services:
       SDK_BASE_URL: http://sdk-scheme-adapter:4001
       SDK_HTTP_TIMEOUT: 30000
       # DFSP identity
-      FSP_ID: gisp_fsp
+      FSP_ID: Taybull
       LEI: 123456789
       CURRENCY: GMD
       SUPPORTED_ID_TYPE: MSISDN
