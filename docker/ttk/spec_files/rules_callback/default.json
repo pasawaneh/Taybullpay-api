@@ -1,0 +1,123 @@
+[
+  {
+    "ruleId": 1,
+    "priority": 1,
+    "description": "GET /parties - Return Essa Jabang as the remote payee",
+    "apiVersion": {
+      "minorVersion": 1,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        { "fact": "operationPath", "operator": "equal", "value": "/parties/{Type}/{ID}" },
+        { "fact": "method", "operator": "equal", "value": "get" }
+      ]
+    },
+    "event": {
+      "type": "FIXED_CALLBACK",
+      "params": {
+        "method": "put",
+        "path": "/parties/{$request.params.Type}/{$request.params.ID}",
+        "headers": {
+          "Content-Type": "application/vnd.interoperability.parties+json;version=1.1",
+          "FSPIOP-Source": "ttksim",
+          "FSPIOP-Destination": "{$request.headers.fspiop-source}",
+          "Date": "{$function.generic.curDate}"
+        },
+        "body": {
+          "party": {
+            "partyIdInfo": {
+              "partyIdType": "{$request.params.Type}",
+              "partyIdentifier": "{$request.params.ID}",
+              "fspId": "ttksim"
+            },
+            "name": "Essa Jabang",
+            "personalInfo": {
+              "complexName": { "firstName": "Essa", "lastName": "Jabang" },
+              "dateOfBirth": "1985-11-20"
+            }
+          }
+        },
+        "delay": 200
+      }
+    }
+  },
+  {
+    "ruleId": 2,
+    "priority": 1,
+    "description": "POST /quotes - Return a quote with fees in GMD",
+    "apiVersion": {
+      "minorVersion": 1,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        { "fact": "operationPath", "operator": "equal", "value": "/quotes" },
+        { "fact": "method", "operator": "equal", "value": "post" }
+      ]
+    },
+    "event": {
+      "type": "FIXED_CALLBACK",
+      "params": {
+        "method": "put",
+        "path": "/quotes/{$request.body.quoteId}",
+        "headers": {
+          "Content-Type": "application/vnd.interoperability.quotes+json;version=1.1",
+          "FSPIOP-Source": "ttksim",
+          "FSPIOP-Destination": "{$request.headers.fspiop-source}",
+          "Date": "{$function.generic.curDate}"
+        },
+        "body": {
+          "transferAmount": { "amount": "{$request.body.amount.amount}", "currency": "{$request.body.amount.currency}" },
+          "payeeFspFee": { "amount": "1", "currency": "{$request.body.amount.currency}" },
+          "payeeFspCommission": { "amount": "0", "currency": "{$request.body.amount.currency}" },
+          "payeeReceiveAmount": { "amount": "{$request.body.amount.amount}", "currency": "{$request.body.amount.currency}" },
+          "expiration": "{$function.generic.futureDate}",
+          "ilpPacket": "{$function.generic.ilpPacket}",
+          "condition": "{$function.generic.ilpCondition}"
+        },
+        "delay": 200
+      }
+    }
+  },
+  {
+    "ruleId": 3,
+    "priority": 1,
+    "description": "POST /transfers - Return transfer fulfilment (COMMITTED)",
+    "apiVersion": {
+      "minorVersion": 1,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        { "fact": "operationPath", "operator": "equal", "value": "/transfers" },
+        { "fact": "method", "operator": "equal", "value": "post" }
+      ]
+    },
+    "event": {
+      "type": "FIXED_CALLBACK",
+      "params": {
+        "method": "put",
+        "path": "/transfers/{$request.body.transferId}",
+        "headers": {
+          "Content-Type": "application/vnd.interoperability.transfers+json;version=1.1",
+          "FSPIOP-Source": "ttksim",
+          "FSPIOP-Destination": "{$request.headers.fspiop-source}",
+          "Date": "{$function.generic.curDate}"
+        },
+        "body": {
+          "fulfilment": "{$function.generic.ilpFulfilment}",
+          "transferState": "COMMITTED",
+          "completedTimestamp": "{$function.generic.curDate}"
+        },
+        "delay": 200
+      }
+    }
+  }
+]

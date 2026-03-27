@@ -1,0 +1,222 @@
+{
+  "name": "Gisp Core Connector P2P Tests",
+  "test_cases": [
+    {
+      "id": 1,
+      "name": "Party Lookup - Ebrima Sawaneh",
+      "requests": [
+        {
+          "id": 1,
+          "description": "GET /parties - Look up Ebrima by MSISDN 7788255",
+          "apiVersion": {
+            "minorVersion": 0,
+            "majorVersion": 1,
+            "type": "mojaloop_simulator",
+            "asynchronous": false
+          },
+          "operationPath": "/parties/{Type}/{ID}",
+          "method": "get",
+          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_SDK_PORT}",
+          "params": { "Type": "MSISDN", "ID": "{$environment.SENDER_MSISDN}" },
+          "headers": { "Content-Type": "application/json", "Date": "{$function.generic.curDate}" },
+          "tests": {
+            "assertions": [
+              { "id": 1, "description": "Status is 200", "exec": ["expect(response.status).to.equal(200)"] },
+              { "id": 2, "description": "First name is Ebrima", "exec": ["expect(response.body.firstName).to.equal('Ebrima')"] },
+              { "id": 3, "description": "Last name is Sawaneh", "exec": ["expect(response.body.lastName).to.equal('Sawaneh')"] },
+              { "id": 4, "description": "idValue matches MSISDN", "exec": ["expect(response.body.idValue).to.equal('{$environment.SENDER_MSISDN}')"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Party Lookup - Essa Jabang",
+      "requests": [
+        {
+          "id": 1,
+          "description": "GET /parties - Look up Essa by MSISDN 9960268",
+          "apiVersion": { "minorVersion": 0, "majorVersion": 1, "type": "mojaloop_simulator", "asynchronous": false },
+          "operationPath": "/parties/{Type}/{ID}",
+          "method": "get",
+          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_SDK_PORT}",
+          "params": { "Type": "MSISDN", "ID": "{$environment.RECEIVER_MSISDN}" },
+          "headers": { "Content-Type": "application/json", "Date": "{$function.generic.curDate}" },
+          "tests": {
+            "assertions": [
+              { "id": 1, "description": "Status is 200", "exec": ["expect(response.status).to.equal(200)"] },
+              { "id": 2, "description": "First name is Essa", "exec": ["expect(response.body.firstName).to.equal('Essa')"] },
+              { "id": 3, "description": "Last name is Jabang", "exec": ["expect(response.body.lastName).to.equal('Jabang')"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Party Lookup - Unknown Account",
+      "requests": [
+        {
+          "id": 1,
+          "description": "GET /parties - Unknown MSISDN returns error",
+          "apiVersion": { "minorVersion": 0, "majorVersion": 1, "type": "mojaloop_simulator", "asynchronous": false },
+          "operationPath": "/parties/{Type}/{ID}",
+          "method": "get",
+          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_SDK_PORT}",
+          "params": { "Type": "MSISDN", "ID": "{$environment.UNKNOWN_MSISDN}" },
+          "headers": { "Content-Type": "application/json", "Date": "{$function.generic.curDate}" },
+          "tests": {
+            "assertions": [
+              { "id": 1, "description": "Status is not 200", "exec": ["expect(response.status).to.not.equal(200)"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Quote Request - Ebrima to Essa (100 GMD)",
+      "requests": [
+        {
+          "id": 1,
+          "description": "POST /quoterequests - Quote for 100 GMD transfer",
+          "apiVersion": { "minorVersion": 0, "majorVersion": 1, "type": "mojaloop_simulator", "asynchronous": false },
+          "operationPath": "/quoterequests",
+          "method": "post",
+          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_SDK_PORT}",
+          "headers": { "Content-Type": "application/json", "Date": "{$function.generic.curDate}" },
+          "body": {
+            "quoteId": "{$function.generic.generateUUID}",
+            "transactionId": "{$function.generic.generateUUID}",
+            "amount": "{$environment.TRANSFER_AMOUNT}",
+            "amountType": "SEND",
+            "currency": "{$environment.CURRENCY}",
+            "initiator": "PAYER",
+            "initiatorType": "CONSUMER",
+            "scenario": "TRANSFER",
+            "from": { "idType": "MSISDN", "idValue": "{$environment.SENDER_MSISDN}" },
+            "to": { "idType": "MSISDN", "idValue": "{$environment.RECEIVER_MSISDN}" },
+            "transactionType": "TRANSFER"
+          },
+          "tests": {
+            "assertions": [
+              { "id": 1, "description": "Status is 200", "exec": ["expect(response.status).to.equal(200)"] },
+              { "id": 2, "description": "Has transferAmount", "exec": ["expect(response.body.transferAmount).to.not.be.undefined"] },
+              { "id": 3, "description": "Currency is GMD", "exec": ["expect(response.body.transferAmountCurrency).to.equal('GMD')"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Transfer - Ebrima sends 100 GMD to Essa (Payee Side)",
+      "requests": [
+        {
+          "id": 1,
+          "description": "POST /transfers - Fund reservation for incoming transfer",
+          "apiVersion": { "minorVersion": 0, "majorVersion": 1, "type": "mojaloop_simulator", "asynchronous": false },
+          "operationPath": "/transfers",
+          "method": "post",
+          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_SDK_PORT}",
+          "headers": { "Content-Type": "application/json", "Date": "{$function.generic.curDate}" },
+          "body": {
+            "transferId": "{$function.generic.generateUUID}",
+            "amount": "100",
+            "amountType": "SEND",
+            "currency": "GMD",
+            "from": {
+              "idType": "MSISDN",
+              "idValue": "7788255",
+              "displayName": "Ebrima Sawaneh",
+              "firstName": "Ebrima",
+              "lastName": "Sawaneh"
+            },
+            "to": {
+              "idType": "MSISDN",
+              "idValue": "9960268",
+              "displayName": "Essa Jabang",
+              "firstName": "Essa",
+              "lastName": "Jabang"
+            },
+            "transactionType": "TRANSFER",
+            "ilpPacket": {
+              "data": {
+                "amount": { "amount": "100", "currency": "GMD" },
+                "quoteId": "aaaa1111-bb22-4cc3-add4-eeee55556666",
+                "transactionId": "bbbb2222-cc33-4dd4-aee5-ffff66667777",
+                "payee": { "partyIdInfo": { "partyIdType": "MSISDN", "partyIdentifier": "9960268" } },
+                "payer": { "partyIdInfo": { "partyIdType": "MSISDN", "partyIdentifier": "7788255" } },
+                "transactionType": { "initiator": "PAYER", "initiatorType": "CONSUMER", "scenario": "TRANSFER" }
+              }
+            },
+            "note": "Ebrima sending to Essa",
+            "quote": {
+              "quoteId": "cccc3333-dd44-4ee5-aff6-111122223333",
+              "transactionId": "dddd4444-ee55-4ff6-a117-222233334444",
+              "transferAmount": "100",
+              "transferAmountCurrency": "GMD",
+              "payeeReceiveAmount": "100",
+              "payeeReceiveAmountCurrency": "GMD",
+              "payeeFspFeeAmount": "0",
+              "payeeFspFeeAmountCurrency": "GMD",
+              "payeeFspCommissionAmount": "0",
+              "payeeFspCommissionAmountCurrency": "GMD",
+              "expiration": "2027-12-31T00:00:00.000Z"
+            }
+          },
+          "tests": {
+            "assertions": [
+              { "id": 1, "description": "Status is 200", "exec": ["expect(response.status).to.equal(200)"] },
+              { "id": 2, "description": "Has homeTransactionId from Taybullpay", "exec": ["expect(response.body.homeTransactionId).to.match(/^TBP-/)"] },
+              { "id": 3, "description": "Funds are RESERVED", "exec": ["expect(response.body.transferState).to.equal('RESERVED')"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Send Money - Ebrima sends 250 GMD to Essa (Payer Side via SDK Adapter)",
+      "requests": [
+        {
+          "id": 1,
+          "description": "POST /send-money - Full outbound flow: Gisp -> SDK Adapter -> TTK (simulated payee) -> callbacks",
+          "apiVersion": { "minorVersion": 0, "majorVersion": 1, "type": "mojaloop_simulator", "asynchronous": false },
+          "operationPath": "/send-money",
+          "method": "post",
+          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_DFSP_PORT}",
+          "headers": { "Content-Type": "application/json" },
+          "body": {
+            "homeTransactionId": "tbp-send-001",
+            "payeeId": "{$environment.RECEIVER_MSISDN}",
+            "payeeIdType": "MSISDN",
+            "sendAmount": "250",
+            "sendCurrency": "{$environment.CURRENCY}",
+            "receiveCurrency": "{$environment.CURRENCY}",
+            "purposeCode": "payment",
+            "transactionType": "TRANSFER",
+            "payer": {
+              "name": "Ebrima Sawaneh",
+              "payerId": "{$environment.SENDER_MSISDN}",
+              "DateAndPlaceOfBirth": {
+                "BirthDt": "1990-05-15",
+                "PrvcOfBirth": "West Coast",
+                "CityOfBirth": "Banjul",
+                "CtryOfBirth": "GM"
+              }
+            }
+          },
+          "tests": {
+            "assertions": [
+              { "id": 1, "description": "Status is 200", "exec": ["expect(response.status).to.equal(200)"] },
+              { "id": 2, "description": "Has payee details", "exec": ["expect(response.body.payeeDetails).to.not.be.undefined"] },
+              { "id": 3, "description": "Has transaction ID", "exec": ["expect(response.body.transactionId).to.not.be.undefined"] }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

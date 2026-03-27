@@ -1,0 +1,281 @@
+services:
+  # ─────────────────────────────────────────────
+  # PostgreSQL - Core Banking Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: taybullpay-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taybullpay
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # Taybullpay CBS API
+  # ─────────────────────────────────────────────
+  taybullpay-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taybullpay-api
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/taybullpay
+      API_KEY: ${API_KEY:-test-key}
+      API_SECRET: ${API_SECRET:-test-secret}
+      NODE_ENV: production
+      LOG_LEVEL: info
+      RATE_LIMIT_MAX: 1000
+      RATE_LIMIT_WINDOW_MS: 60000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mojaloop-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8080/health', r => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─────────────────────────────────────────────
+  # Mojaloop Testing Toolkit (TTK) - Backend
+  # Simulates the Mojaloop Hub/Switch
+  # ─────────────────────────────────────────────
+  ttk:
+    image: mojaloop/ml-testing-toolkit:v18.19.2
+    container_name: ttk
+    ports:
+      - "4040:4040"    # Mojaloop API (FSPIOP)
+      - "5050:5050"    # Test API / Specfile API
+    volumes:
+      - ./docker/ttk/spec_files/system_config.json:/opt/app/spec_files/system_config.json
+      - ./docker/ttk/spec_files/user_config.json:/opt/app/spec_files/user_config.json
+      - ./docker/ttk/spec_files/rules_callback/default.json:/opt/app/spec_files/rules_callback/default.json
+      - ./docker/ttk/test-cases:/opt/app/examples/collections
+      - ./docker/ttk/environments:/opt/app/examples/environments
+    environment:
+      AUTH_ENABLED: "FALSE"
+    depends_on:
+      ttk-mongo:
+        condition: service_healthy
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5050/api/objectstore/healthCheck', r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>process.exit(r.statusCode===200?0:1)) }).on('error', () => process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────────
+  # MongoDB - TTK report storage
+  # ─────────────────────────────────────────────
+  ttk-mongo:
+    image: mongo:6
+    container_name: ttk-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # TTK UI - Web Interface for test management
+  # ─────────────────────────────────────────────
+  ttk-ui:
+    image: mojaloop/ml-testing-toolkit-ui:v16.7.4
+    container_name: ttk-ui
+    ports:
+      - "6060:6060"
+    volumes:
+      - ./docker/ttk/ui-config.json:/usr/share/nginx/html/config.json
+    environment:
+      API_BASE_URL: http://localhost:5050
+      AUTH_ENABLED: "FALSE"
+    depends_on:
+      ttk:
+        condition: service_healthy
+    networks:
+      - mojaloop-net
+
+  # ─────────────────────────────────────────────
+  # SDK Scheme Adapter
+  # Bridges FSPIOP <-> Backend API (Gisp connector)
+  # ─────────────────────────────────────────────
+  sdk-scheme-adapter:
+    image: mojaloop/sdk-scheme-adapter:v24.19.4
+    container_name: sdk-scheme-adapter
+    ports:
+      - "4000:4000"    # Inbound API (from Mojaloop switch)
+      - "4001:4001"    # Outbound API (to Mojaloop switch)
+    environment:
+      # Inbound - receives callbacks from the switch (TTK)
+      INBOUND_LISTEN_PORT: 4000
+      # Outbound - sends requests to the switch (TTK)
+      OUTBOUND_LISTEN_PORT: 4001
+      # Backend - our Gisp core connector SDK server
+      BACKEND_ENDPOINT: gisp-connector:3003
+      # FSPIOP endpoint (the switch / TTK)
+      PEER_ENDPOINT: ttk:4040
+      ALS_ENDPOINT: ttk:4040
+      QUOTES_ENDPOINT: ttk:4040
+      TRANSFERS_ENDPOINT: ttk:4040
+      BULK_QUOTES_ENDPOINT: ttk:4040
+      BULK_TRANSFERS_ENDPOINT: ttk:4040
+      TRANSACTION_REQUESTS_ENDPOINT: ttk:4040
+      # DFSP identity
+      DFSP_ID: gisp_fsp
+      # ILP
+      ILP_SECRET: secret
+      CHECK_ILP: false
+      # Cache / Redis
+      CACHE_URL: redis://redis:6379
+      CACHE_HOST: redis
+      CACHE_PORT: 6379
+      REDIS__CONNECTION_URL: redis://redis:6379
+      # Misc
+      AUTO_ACCEPT_PARTY: true
+      AUTO_ACCEPT_QUOTES: false
+      LOG_INDENT: 0
+      ENABLE_BACKEND_EVENT_HANDLER: false
+      ENABLE_FSPIOP_EVENT_HANDLER: true
+      WS_PORT: 4002
+      VALIDATE_INBOUND_JWS: false
+      JWS_SIGN: false
+      OUTBOUND_MUTUAL_TLS_ENABLED: false
+      INBOUND_MUTUAL_TLS_ENABLED: false
+      MULTIPLE_PARTIES_RESPONSE: false
+      MULTIPLE_PARTIES_RESPONSE_COUNT: 1
+      REJECT_EXPIRED_QUOTE_RESPONSES: false
+      REJECT_TRANSFERS_ON_EXPIRED_QUOTES: false
+      REJECT_EXPIRED_TRANSFER_FULFILS: false
+      RESERVE_NOTIFICATION: true
+      RESOURCE_VERSIONS: "parties=1.1,quotes=1.0,transfers=1.0"
+      ID_GENERATOR: '{"type":"uuid","version":4}'
+      KAFKA__DOMAIN_EVENTS__PRODUCER__KAFKA__CLIENT_ID: sdk-scheme-adapter
+      KAFKA__DOMAIN_EVENTS__PRODUCER__KAFKA__BROKERS: '["kafka:9092"]'
+      KAFKA__DOMAIN_EVENTS__CONSUMER__KAFKA__CLIENT_ID: sdk-scheme-adapter
+      KAFKA__DOMAIN_EVENTS__CONSUMER__KAFKA__BROKERS: '["kafka:9092"]'
+      KAFKA__COMMAND_EVENTS__PRODUCER__KAFKA__CLIENT_ID: sdk-scheme-adapter
+      KAFKA__COMMAND_EVENTS__PRODUCER__KAFKA__BROKERS: '["kafka:9092"]'
+      KAFKA__COMMAND_EVENTS__CONSUMER__KAFKA__CLIENT_ID: sdk-scheme-adapter
+      KAFKA__COMMAND_EVENTS__CONSUMER__KAFKA__BROKERS: '["kafka:9092"]'
+    depends_on:
+      redis:
+        condition: service_healthy
+      ttk:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - mojaloop-net
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # Kafka - SDK Scheme Adapter event bus
+  # ─────────────────────────────────────────────
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ─────────────────────────────────────────────
+  # Redis - SDK Scheme Adapter cache
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # Gisp Core Connector
+  # Bridges SDK Scheme Adapter <-> Taybullpay CBS
+  # ─────────────────────────────────────────────
+  gisp-connector:
+    build:
+      context: ../Gisp
+      dockerfile: Dockerfile
+    container_name: gisp-connector
+    ports:
+      - "3003:3003"    # SDK Backend API (from SDK Scheme Adapter)
+      - "3004:3004"    # DFSP API (for send-money / payer-side)
+    environment:
+      SDK_SERVER_HOST: 0.0.0.0
+      SDK_SERVER_PORT: 3003
+      DFSP_SERVER_HOST: 0.0.0.0
+      DFSP_SERVER_PORT: 3004
+      CBS_NAME: gisp
+      MODE: dfsp
+      # SDK Scheme Adapter outbound API
+      SDK_BASE_URL: http://sdk-scheme-adapter:4001
+      SDK_HTTP_TIMEOUT: 30000
+      # DFSP identity
+      FSP_ID: gisp_fsp
+      LEI: 123456789
+      CURRENCY: GMD
+      SUPPORTED_ID_TYPE: MSISDN
+      # Taybullpay CBS API
+      CBS_BASE_URL: http://taybullpay-api:8080/api
+      CBS_API_KEY: ${API_KEY:-test-key}
+      CBS_API_SECRET: ${API_SECRET:-test-secret}
+    depends_on:
+      taybullpay-api:
+        condition: service_healthy
+      sdk-scheme-adapter:
+        condition: service_started
+    networks:
+      - mojaloop-net
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
+networks:
+  mojaloop-net:
+    driver: bridge

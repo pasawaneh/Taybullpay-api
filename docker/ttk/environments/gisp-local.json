@@ -1,0 +1,22 @@
+{
+  "inputValues": {
+    "GISP_CONNECTOR_HOST": "gisp-connector",
+    "GISP_SDK_PORT": "3003",
+    "GISP_DFSP_PORT": "3004",
+    "TTK_HOST": "ttk",
+    "TTK_PORT": "4040",
+    "TAYBULLPAY_HOST": "taybullpay-api",
+    "TAYBULLPAY_PORT": "8080",
+    "SENDER_MSISDN": "7788255",
+    "RECEIVER_MSISDN": "9960268",
+    "UNKNOWN_MSISDN": "0000000",
+    "CURRENCY": "GMD",
+    "TRANSFER_AMOUNT": "100",
+    "SENDER_FSP_ID": "gisp_fsp",
+    "RECEIVER_FSP_ID": "ttksim",
+    "SENDER_FIRST_NAME": "Ebrima",
+    "SENDER_LAST_NAME": "Sawaneh",
+    "RECEIVER_FIRST_NAME": "Essa",
+    "RECEIVER_LAST_NAME": "Jabang"
+  }
+}
