@@ -226,8 +226,8 @@
 
 <script>
 const CBS_URL = window.location.origin;
-const CONNECTOR_URL = 'http://localhost:3003';
-const DFSP_URL = 'http://localhost:3004';
+const CONNECTOR_URL = CBS_URL + '/proxy/connector';
+const DFSP_URL = CBS_URL + '/proxy/dfsp';
 const AUTH = { 'x-api-key': 'test-key', 'x-api-secret': 'test-secret' };
 
 // Health check
@@ -327,11 +327,10 @@ async function lookupDirect() {
 async function lookupConnector() {
   const id = document.getElementById('lookupConnectorId').value;
   try {
-    const res = await fetch(`${CONNECTOR_URL}/parties/MSISDN/${id}`);
-    const data = await res.json();
-    showResult('lookupConnectorResult', data, res.status >= 400);
+    const { status, data } = await apiCall(`${CONNECTOR_URL}/parties/MSISDN/${id}`);
+    showResult('lookupConnectorResult', data, status >= 400);
   } catch (e) {
-    showResult('lookupConnectorResult', `Error: ${e.message}. Is the Gisp connector running on port 3003?`, true);
+    showResult('lookupConnectorResult', `Error: ${e.message}. Is the Gisp connector running?`, true);
   }
 }
 
@@ -366,11 +365,10 @@ async function requestConnectorQuote() {
     transactionType: 'TRANSFER',
   };
   try {
-    const res = await fetch(`${CONNECTOR_URL}/quoterequests`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    const { status, data } = await apiCall(`${CONNECTOR_URL}/quoterequests`, {
+      method: 'POST', body: JSON.stringify(body),
     });
-    const data = await res.json();
-    showResult('quoteConnResult', data, res.status >= 400);
+    showResult('quoteConnResult', data, status >= 400);
   } catch (e) {
     showResult('quoteConnResult', `Error: ${e.message}`, true);
   }
@@ -444,13 +442,12 @@ async function sendMoney() {
     },
   };
   try {
-    const res = await fetch(`${DFSP_URL}/send-money`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    const { status, data } = await apiCall(`${DFSP_URL}/send-money`, {
+      method: 'POST', body: JSON.stringify(body),
     });
-    const data = await res.json();
-    showResult('sendMoneyResult', data, res.status >= 400);
+    showResult('sendMoneyResult', data, status >= 400);
   } catch (e) {
-    showResult('sendMoneyResult', `Error: ${e.message}. Is the Gisp connector running on port 3004?`, true);
+    showResult('sendMoneyResult', `Error: ${e.message}. Is the Gisp connector running?`, true);
   }
   btn.disabled = false;
   btn.textContent = 'Send Money';
