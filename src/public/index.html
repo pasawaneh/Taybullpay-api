@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taybullpay - Test Console</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+    .header { background: linear-gradient(135deg, #1e3a5f 0%, #0d9488 100%); padding: 20px 30px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 24px; font-weight: 700; }
+    .header h1 span { color: #5eead4; }
+    .header .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8; }
+    .header .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab { padding: 10px 20px; background: #1e293b; border: 1px solid #334155; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; color: #94a3b8; transition: all 0.2s; }
+    .tab:hover { background: #334155; color: #e2e8f0; }
+    .tab.active { background: #0d9488; color: white; border-color: #0d9488; }
+
+    .panel { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 0 8px 8px 8px; padding: 24px; }
+    .panel.active { display: block; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+    .card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 20px; }
+    .card h3 { color: #5eead4; font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 14px; outline: none; }
+    .form-group input:focus, .form-group select:focus { border-color: #0d9488; }
+    .form-group input::placeholder { color: #475569; }
+
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #0d9488; color: white; }
+    .btn-primary:hover { background: #0f766e; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-warning { background: #d97706; color: white; }
+    .btn-warning:hover { background: #b45309; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-success:hover { background: #15803d; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+    .result { margin-top: 16px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 14px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; line-height: 1.5; }
+    .result.success { border-color: #16a34a; }
+    .result.error { border-color: #dc2626; }
+
+    .accounts-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .accounts-table th, .accounts-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; font-size: 13px; }
+    .accounts-table th { color: #5eead4; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .accounts-table tr:hover td { background: #1e293b; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-active { background: #16a34a33; color: #4ade80; }
+    .badge-blocked { background: #dc262633; color: #f87171; }
+    .badge-closed { background: #6b728033; color: #9ca3af; }
+    .badge-reserved { background: #d9770633; color: #fbbf24; }
+    .badge-committed { background: #16a34a33; color: #4ade80; }
+    .badge-refunded { background: #7c3aed33; color: #a78bfa; }
+    .badge-cancelled { background: #dc262633; color: #f87171; }
+
+    .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #f1f5f9; }
+    .info-bar { background: #0d948822; border: 1px solid #0d948844; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #5eead4; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Taybull<span>pay</span> Test Console</h1>
+    <div class="status">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="accounts">Accounts</div>
+      <div class="tab" data-tab="lookup">Party Lookup</div>
+      <div class="tab" data-tab="quotes">Quotes</div>
+      <div class="tab" data-tab="transfers">Transfers</div>
+      <div class="tab" data-tab="sendmoney">Send Money</div>
+      <div class="tab" data-tab="history">Transfer History</div>
+    </div>
+
+    <!-- ACCOUNTS -->
+    <div class="panel active" id="panel-accounts">
+      <div class="section-title">Account Management</div>
+      <div class="info-bar">Manage accounts in the Taybullpay Core Banking System. All balances in GMD (Gambian Dalasi).</div>
+      <div class="btn-row" style="margin-bottom:20px">
+        <button class="btn btn-primary" onclick="loadAccounts()">Load All Accounts</button>
+        <button class="btn btn-success" onclick="showCreateAccount()">+ New Account</button>
+      </div>
+      <div id="accountsList"></div>
+      <div id="createAccountForm" style="display:none" class="card" style="margin-top:16px">
+        <h3>Create Account</h3>
+        <div class="grid">
+          <div class="form-group"><label>Account ID (MSISDN)</label><input id="newAccId" placeholder="e.g. 7701234"></div>
+          <div class="form-group"><label>First Name</label><input id="newFirstName" placeholder="e.g. Ousman"></div>
+          <div class="form-group"><label>Last Name</label><input id="newLastName" placeholder="e.g. Jammeh"></div>
+          <div class="form-group"><label>Display Name</label><input id="newDisplayName" placeholder="e.g. Ousman Jammeh"></div>
+          <div class="form-group"><label>Date of Birth</label><input id="newDob" type="date" value="1990-01-01"></div>
+          <div class="form-group"><label>Type</label>
+            <select id="newType"><option>CONSUMER</option><option>AGENT</option><option>BUSINESS</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="createAccount()">Create</button>
+          <button class="btn btn-danger" onclick="document.getElementById('createAccountForm').style.display='none'">Cancel</button>
+        </div>
+        <div id="createAccountResult" class="result" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- PARTY LOOKUP -->
+    <div class="panel" id="panel-lookup">
+      <div class="section-title">Party Lookup</div>
+      <div class="info-bar">Look up account details via the Gisp Core Connector (simulates Mojaloop party resolution).</div>
+      <div class="grid">
+        <div class="card">
+          <h3>Lookup via Taybullpay API (Direct)</h3>
+          <div class="form-group"><label>Account ID</label><input id="lookupDirectId" placeholder="e.g. 7788255" value="7788255"></div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="lookupDirect()">Lookup</button></div>
+          <div id="lookupDirectResult" class="result" style="display:none"></div>
+        </div>
+        <div class="card">
+          <h3>Lookup via Gisp Connector (Mojaloop)</h3>
+          <div class="form-group"><label>MSISDN</label><input id="lookupConnectorId" placeholder="e.g. 7788255" value="7788255"></div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="lookupConnector()">Lookup</button></div>
+          <div id="lookupConnectorResult" class="result" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUOTES -->
+    <div class="panel" id="panel-quotes">
+      <div class="section-title">Quote Request</div>
+      <div class="info-bar">Request a transfer quote to calculate fees and commission.</div>
+      <div class="grid">
+        <div class="card">
+          <h3>Taybullpay Quote (Direct)</h3>
+          <div class="form-group"><label>Amount (GMD)</label><input id="quoteAmount" type="number" value="500" step="0.01"></div>
+          <div class="form-group"><label>Payer Account</label><input id="quotePayer" placeholder="e.g. 7788255" value="7788255"></div>
+          <div class="form-group"><label>Payee Account</label><input id="quotePayee" placeholder="e.g. 9960268" value="9960268"></div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="requestQuote()">Get Quote</button></div>
+          <div id="quoteResult" class="result" style="display:none"></div>
+        </div>
+        <div class="card">
+          <h3>Connector Quote (Mojaloop)</h3>
+          <div class="form-group"><label>Amount (GMD)</label><input id="quoteConnAmount" type="number" value="500" step="0.01"></div>
+          <div class="form-group"><label>Payer MSISDN</label><input id="quoteConnPayer" value="7788255"></div>
+          <div class="form-group"><label>Payee MSISDN</label><input id="quoteConnPayee" value="9960268"></div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="requestConnectorQuote()">Get Quote</button></div>
+          <div id="quoteConnResult" class="result" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSFERS -->
+    <div class="panel" id="panel-transfers">
+      <div class="section-title">Transfer Lifecycle</div>
+      <div class="info-bar">Test the full transfer lifecycle: Reserve -> Commit/Cancel/Refund.</div>
+      <div class="grid">
+        <div class="card">
+          <h3>1. Reserve Funds</h3>
+          <div class="form-group"><label>From Account</label><input id="txFromAccount" value="7788255"></div>
+          <div class="form-group"><label>To Account</label><input id="txToAccount" value="9960268"></div>
+          <div class="form-group"><label>Amount (GMD)</label><input id="txAmount" type="number" value="100" step="0.01"></div>
+          <div class="btn-row"><button class="btn btn-warning" onclick="reserveFunds()">Reserve Funds</button></div>
+          <div id="reserveResult" class="result" style="display:none"></div>
+        </div>
+        <div class="card">
+          <h3>2. Commit / Cancel / Refund</h3>
+          <div class="form-group"><label>Transfer ID</label><input id="txTransferId" placeholder="Paste transfer ID from reserve"></div>
+          <div class="btn-row">
+            <button class="btn btn-success" onclick="commitTransfer()">Commit</button>
+            <button class="btn btn-danger" onclick="cancelTransfer()">Cancel</button>
+            <button class="btn btn-warning" onclick="refundTransfer()">Refund</button>
+          </div>
+          <div class="form-group" style="margin-top:12px"><label>Transfer Status</label></div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="getTransfer()">Check Status</button></div>
+          <div id="transferActionResult" class="result" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEND MONEY -->
+    <div class="panel" id="panel-sendmoney">
+      <div class="section-title">Send Money (Full Mojaloop Flow)</div>
+      <div class="info-bar">Initiate a payer-side transfer through the Gisp Connector -> SDK Scheme Adapter -> TTK (simulated payee DFSP). Check TTK Monitoring after sending.</div>
+      <div class="card">
+        <h3>P2P Transfer</h3>
+        <div class="grid">
+          <div>
+            <div class="form-group"><label>Payer Name</label><input id="smPayerName" value="Ebrima Sawaneh"></div>
+            <div class="form-group"><label>Payer MSISDN</label><input id="smPayerId" value="7788255"></div>
+          </div>
+          <div>
+            <div class="form-group"><label>Payee MSISDN</label><input id="smPayeeId" value="9960268"></div>
+            <div class="form-group"><label>Amount (GMD)</label><input id="smAmount" type="number" value="250" step="0.01"></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="smBtn" onclick="sendMoney()">Send Money</button>
+        </div>
+        <div id="sendMoneyResult" class="result" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="panel" id="panel-history">
+      <div class="section-title">Transfer History</div>
+      <div class="info-bar">View paginated transfer history for any account.</div>
+      <div class="card">
+        <div class="form-group"><label>Account ID</label><input id="histAccount" value="7788255"></div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="loadHistory()">Load History</button></div>
+        <div id="historyResult"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const CBS_URL = window.location.origin;
+const CONNECTOR_URL = 'http://localhost:3003';
+const DFSP_URL = 'http://localhost:3004';
+const AUTH = { 'x-api-key': 'test-key', 'x-api-secret': 'test-secret' };
+
+// Health check
+async function checkHealth() {
+  try {
+    const res = await fetch(`${CBS_URL}/health`);
+    const data = await res.json();
+    document.getElementById('statusDot').style.background = '#22c55e';
+    document.getElementById('statusText').textContent = `Connected - ${data.service}`;
+  } catch {
+    document.getElementById('statusDot').style.background = '#dc2626';
+    document.getElementById('statusText').textContent = 'Disconnected';
+  }
+}
+checkHealth();
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+  });
+});
+
+function showResult(id, data, isError) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.className = `result ${isError ? 'error' : 'success'}`;
+  el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+async function apiCall(url, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...AUTH, ...(options.headers || {}) };
+  const res = await fetch(url, { ...options, headers });
+  const data = await res.json();
+  return { status: res.status, data };
+}
+
+// ACCOUNTS
+async function loadAccounts() {
+  const { data } = await apiCall(`${CBS_URL}/api/accounts?limit=20`);
+  const accounts = data.accounts || [];
+  let html = '<table class="accounts-table"><tr><th>MSISDN</th><th>Name</th><th>Type</th><th>Balance</th><th>KYC</th><th>Status</th><th>Actions</th></tr>';
+  accounts.forEach(a => {
+    const badge = a.status === 'ACTIVE' ? 'active' : a.status === 'BLOCKED' ? 'blocked' : 'closed';
+    html += `<tr>
+      <td>${a.accountId}</td>
+      <td>${a.displayName}</td>
+      <td>${a.type}</td>
+      <td style="font-weight:600">${Number(a.balance).toLocaleString()} GMD</td>
+      <td>${a.kycVerified ? 'Yes' : 'No'}</td>
+      <td><span class="badge badge-${badge}">${a.status}</span></td>
+      <td><button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="lookupBalance('${a.accountId}')">Balance</button></td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('accountsList').innerHTML = html;
+}
+
+function showCreateAccount() {
+  document.getElementById('createAccountForm').style.display = 'block';
+}
+
+async function createAccount() {
+  const body = {
+    accountId: document.getElementById('newAccId').value,
+    firstName: document.getElementById('newFirstName').value,
+    lastName: document.getElementById('newLastName').value,
+    displayName: document.getElementById('newDisplayName').value,
+    dateOfBirth: document.getElementById('newDob').value,
+    type: document.getElementById('newType').value,
+    currency: 'GMD',
+  };
+  const { status, data } = await apiCall(`${CBS_URL}/api/accounts`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'x-idempotency-key': crypto.randomUUID() },
+  });
+  showResult('createAccountResult', data, status >= 400);
+  if (status < 400) loadAccounts();
+}
+
+async function lookupBalance(accountId) {
+  const { data } = await apiCall(`${CBS_URL}/api/accounts/${accountId}/balance`);
+  alert(`${accountId}: ${Number(data.balance).toLocaleString()} GMD`);
+}
+
+// PARTY LOOKUP
+async function lookupDirect() {
+  const id = document.getElementById('lookupDirectId').value;
+  const { status, data } = await apiCall(`${CBS_URL}/api/accounts/${id}`);
+  showResult('lookupDirectResult', data, status >= 400);
+}
+
+async function lookupConnector() {
+  const id = document.getElementById('lookupConnectorId').value;
+  try {
+    const res = await fetch(`${CONNECTOR_URL}/parties/MSISDN/${id}`);
+    const data = await res.json();
+    showResult('lookupConnectorResult', data, res.status >= 400);
+  } catch (e) {
+    showResult('lookupConnectorResult', `Error: ${e.message}. Is the Gisp connector running on port 3003?`, true);
+  }
+}
+
+// QUOTES
+async function requestQuote() {
+  const body = {
+    amount: document.getElementById('quoteAmount').value,
+    currency: 'GMD',
+    payerAccountId: document.getElementById('quotePayer').value,
+    payeeAccountId: document.getElementById('quotePayee').value,
+  };
+  const { status, data } = await apiCall(`${CBS_URL}/api/quotes`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'x-idempotency-key': crypto.randomUUID() },
+  });
+  showResult('quoteResult', data, status >= 400);
+}
+
+async function requestConnectorQuote() {
+  const body = {
+    quoteId: crypto.randomUUID(),
+    transactionId: crypto.randomUUID(),
+    amount: document.getElementById('quoteConnAmount').value,
+    amountType: 'SEND',
+    currency: 'GMD',
+    initiator: 'PAYER',
+    initiatorType: 'CONSUMER',
+    scenario: 'TRANSFER',
+    from: { idType: 'MSISDN', idValue: document.getElementById('quoteConnPayer').value },
+    to: { idType: 'MSISDN', idValue: document.getElementById('quoteConnPayee').value },
+    transactionType: 'TRANSFER',
+  };
+  try {
+    const res = await fetch(`${CONNECTOR_URL}/quoterequests`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    showResult('quoteConnResult', data, res.status >= 400);
+  } catch (e) {
+    showResult('quoteConnResult', `Error: ${e.message}`, true);
+  }
+}
+
+// TRANSFERS
+async function reserveFunds() {
+  const body = {
+    fromAccountId: document.getElementById('txFromAccount').value,
+    toAccountId: document.getElementById('txToAccount').value,
+    amount: document.getElementById('txAmount').value,
+    currency: 'GMD',
+  };
+  const { status, data } = await apiCall(`${CBS_URL}/api/transfers/reserve`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'x-idempotency-key': crypto.randomUUID() },
+  });
+  showResult('reserveResult', data, status >= 400);
+  if (data.transferId) document.getElementById('txTransferId').value = data.transferId;
+}
+
+async function commitTransfer() {
+  const id = document.getElementById('txTransferId').value;
+  if (!id) return alert('Enter a transfer ID');
+  const { status, data } = await apiCall(`${CBS_URL}/api/transfers/${id}/commit`, { method: 'PUT' });
+  showResult('transferActionResult', data, status >= 400);
+}
+
+async function cancelTransfer() {
+  const id = document.getElementById('txTransferId').value;
+  if (!id) return alert('Enter a transfer ID');
+  const { status, data } = await apiCall(`${CBS_URL}/api/transfers/${id}/cancel`, { method: 'PUT' });
+  showResult('transferActionResult', data, status >= 400);
+}
+
+async function refundTransfer() {
+  const id = document.getElementById('txTransferId').value;
+  if (!id) return alert('Enter a transfer ID');
+  const { status, data } = await apiCall(`${CBS_URL}/api/transfers/${id}/refund`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: 'Refund from test console' }),
+    headers: { 'x-idempotency-key': crypto.randomUUID() },
+  });
+  showResult('transferActionResult', data, status >= 400);
+}
+
+async function getTransfer() {
+  const id = document.getElementById('txTransferId').value;
+  if (!id) return alert('Enter a transfer ID');
+  const { status, data } = await apiCall(`${CBS_URL}/api/transfers/${id}`);
+  showResult('transferActionResult', data, status >= 400);
+}
+
+// SEND MONEY
+async function sendMoney() {
+  const btn = document.getElementById('smBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  const body = {
+    homeTransactionId: `ui-${Date.now()}`,
+    payeeId: document.getElementById('smPayeeId').value,
+    payeeIdType: 'MSISDN',
+    sendAmount: document.getElementById('smAmount').value,
+    sendCurrency: 'GMD',
+    receiveCurrency: 'GMD',
+    transactionType: 'TRANSFER',
+    payer: {
+      name: document.getElementById('smPayerName').value,
+      payerId: document.getElementById('smPayerId').value,
+    },
+  };
+  try {
+    const res = await fetch(`${DFSP_URL}/send-money`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    showResult('sendMoneyResult', data, res.status >= 400);
+  } catch (e) {
+    showResult('sendMoneyResult', `Error: ${e.message}. Is the Gisp connector running on port 3004?`, true);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Send Money';
+}
+
+// HISTORY
+async function loadHistory() {
+  const accountId = document.getElementById('histAccount').value;
+  const { status, data } = await apiCall(`${CBS_URL}/api/transfers?accountId=${accountId}&limit=20`);
+  if (status >= 400) {
+    document.getElementById('historyResult').innerHTML = `<div class="result error">${JSON.stringify(data, null, 2)}</div>`;
+    return;
+  }
+  const transfers = data.transfers || [];
+  if (transfers.length === 0) {
+    document.getElementById('historyResult').innerHTML = '<p style="margin-top:12px;color:#94a3b8">No transfers found for this account.</p>';
+    return;
+  }
+  let html = '<table class="accounts-table"><tr><th>Transfer ID</th><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Date</th></tr>';
+  transfers.forEach(t => {
+    const badge = t.status.toLowerCase();
+    html += `<tr>
+      <td style="font-family:monospace;font-size:11px">${t.transferId.substring(0, 18)}...</td>
+      <td>${t.fromAccountId}</td>
+      <td>${t.toAccountId || '-'}</td>
+      <td style="font-weight:600">${Number(t.amount).toLocaleString()} ${t.currency}</td>
+      <td><span class="badge badge-${badge}">${t.status}</span></td>
+      <td style="font-size:12px;color:#94a3b8">${new Date(t.createdAt).toLocaleString()}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  if (data.pagination) {
+    html += `<p style="margin-top:8px;font-size:12px;color:#94a3b8">Page ${data.pagination.page} of ${data.pagination.totalPages} (${data.pagination.total} total)</p>`;
+  }
+  document.getElementById('historyResult').innerHTML = html;
+}
+
+// Auto-load accounts on start
+loadAccounts();
+</script>
+</body>
+</html>

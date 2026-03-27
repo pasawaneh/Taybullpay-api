@@ -5,6 +5,7 @@ RUN npm ci --legacy-peer-deps
 COPY tsconfig.json ./
 COPY src/ src/
 RUN npm run build
+RUN mkdir -p dist/public && cp -r src/public/* dist/public/
 RUN npm prune --production --legacy-peer-deps
 
 FROM node:20-alpine

@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import { authenticate } from './services/auth';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
@@ -11,6 +12,9 @@ export function createApp() {
 
   app.use(express.json());
   app.use(rateLimiter);
+
+  // Serve test console UI
+  app.use(express.static(path.join(__dirname, 'public')));
 
   // Health check (no auth)
   app.get('/health', (_req, res) => {
