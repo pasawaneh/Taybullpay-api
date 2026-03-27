@@ -59,12 +59,10 @@ export function createApp() {
   });
 
   // Proxy routes to Gisp connector (no CORS issues)
-  app.all('/proxy/connector/*', (req, res) => {
-    req.url = req.url.replace('/proxy/connector', '');
+  app.use('/proxy/connector', (req, res) => {
     proxyRequest(CONNECTOR_SDK_URL)(req, res);
   });
-  app.all('/proxy/dfsp/*', (req, res) => {
-    req.url = req.url.replace('/proxy/dfsp', '');
+  app.use('/proxy/dfsp', (req, res) => {
     proxyRequest(CONNECTOR_DFSP_URL)(req, res);
   });
 
