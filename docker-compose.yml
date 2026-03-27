@@ -262,6 +262,7 @@ services:
       LEI: 123456789
       CURRENCY: GMD
       SUPPORTED_ID_TYPE: MSISDN
+      CURRENCY_MODE: single
       # Taybullpay CBS API
       CBS_BASE_URL: http://taybullpay-api:8080/api
       CBS_API_KEY: ${API_KEY:-test-key}

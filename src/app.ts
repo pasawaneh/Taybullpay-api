@@ -64,6 +64,54 @@ export function createApp() {
     proxyRequest(CONNECTOR_SDK_URL)(req, res);
   });
   app.use('/proxy/dfsp', (req, res) => {
+    // For send-money, debit payer after successful Mojaloop transfer
+    if (req.method === 'POST' && req.url === '/send-money') {
+      const payerId = req.body?.payer?.payerId;
+      const amount = parseFloat(req.body?.sendAmount || '0');
+      const url = new URL(req.url, CONNECTOR_DFSP_URL);
+      const options: http.RequestOptions = {
+        hostname: url.hostname, port: url.port, path: url.pathname,
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      };
+      const proxyReq = http.request(options, (proxyRes) => {
+        let body = '';
+        proxyRes.on('data', (chunk) => body += chunk);
+        proxyRes.on('end', async () => {
+          try {
+            const data = JSON.parse(body);
+            // If transfer completed, debit payer in CBS
+            if (proxyRes.statusCode === 200 && payerId && amount > 0) {
+              const { getPool } = require('./db/connection');
+              const pool = getPool();
+              const fee = Math.round(amount * 0.01 * 100) / 100;
+              const totalDebit = amount + fee;
+              const balBefore = await pool.query('SELECT balance FROM accounts WHERE account_id = $1', [payerId]);
+              await pool.query('UPDATE accounts SET balance = balance - $1, updated_at = NOW() WHERE account_id = $2', [totalDebit, payerId]);
+              const balAfter = await pool.query('SELECT balance FROM accounts WHERE account_id = $1', [payerId]);
+              data.payerDebit = {
+                accountId: payerId,
+                amount: amount.toFixed(2),
+                fee: fee.toFixed(2),
+                totalDebited: totalDebit.toFixed(2),
+                balanceBefore: parseFloat(balBefore.rows[0]?.balance || 0),
+                balanceAfter: parseFloat(balAfter.rows[0]?.balance || 0),
+                currency: 'GMD',
+              };
+              logger.info(`Mojaloop send-money: debited ${payerId} by ${totalDebit} GMD`);
+            }
+            res.status(proxyRes.statusCode || 200).json(data);
+          } catch (e) {
+            res.status(proxyRes.statusCode || 500).send(body);
+          }
+        });
+      });
+      proxyReq.on('error', (err) => {
+        res.status(502).json({ error: 'CONNECTOR_UNAVAILABLE', message: `Cannot reach connector at ${CONNECTOR_DFSP_URL}` });
+      });
+      proxyReq.write(JSON.stringify(req.body));
+      proxyReq.end();
+      return;
+    }
     proxyRequest(CONNECTOR_DFSP_URL)(req, res);
   });
 
