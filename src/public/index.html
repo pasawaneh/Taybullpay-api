@@ -191,24 +191,31 @@
 
     <!-- SEND MONEY -->
     <div class="panel" id="panel-sendmoney">
-      <div class="section-title">Send Money (Full Mojaloop Flow)</div>
-      <div class="info-bar">Initiate a payer-side transfer through the Gisp Connector -> SDK Scheme Adapter -> TTK (simulated payee DFSP). Check TTK Monitoring after sending.</div>
-      <div class="card">
-        <h3>P2P Transfer</h3>
-        <div class="grid">
-          <div>
-            <div class="form-group"><label>Payer Name</label><input id="smPayerName" value="Ebrima Sawaneh"></div>
-            <div class="form-group"><label>Payer MSISDN</label><input id="smPayerId" value="7788255"></div>
+      <div class="section-title">Send Money</div>
+      <div class="info-bar">Send money between accounts. Fees (1%) are automatically calculated and debited from the payer.</div>
+      <div class="grid">
+        <div class="card">
+          <h3>P2P Transfer</h3>
+          <div class="form-group"><label>From (Payer MSISDN)</label><input id="smPayerId" value="7788255"></div>
+          <div class="form-group"><label>To (Payee MSISDN)</label><input id="smPayeeId" value="9960268"></div>
+          <div class="form-group"><label>Amount (GMD)</label><input id="smAmount" type="number" value="250" step="0.01"></div>
+          <div class="form-group"><label>Note (optional)</label><input id="smNote" placeholder="e.g. Rent payment"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="smBtn" onclick="sendMoney()">Send Money</button>
           </div>
-          <div>
-            <div class="form-group"><label>Payee MSISDN</label><input id="smPayeeId" value="9960268"></div>
-            <div class="form-group"><label>Amount (GMD)</label><input id="smAmount" type="number" value="250" step="0.01"></div>
+          <div id="sendMoneyResult" class="result" style="display:none"></div>
+        </div>
+        <div class="card">
+          <h3>Mojaloop Flow (requires Docker)</h3>
+          <div class="form-group"><label>Payer Name</label><input id="smMojaPayerName" value="Ebrima Sawaneh"></div>
+          <div class="form-group"><label>Payer MSISDN</label><input id="smMojaPayerId" value="7788255"></div>
+          <div class="form-group"><label>Payee MSISDN</label><input id="smMojaPayeeId" value="9960268"></div>
+          <div class="form-group"><label>Amount (GMD)</label><input id="smMojaAmount" type="number" value="250" step="0.01"></div>
+          <div class="btn-row">
+            <button class="btn btn-warning" id="smMojaBtn" onclick="sendMoneyMojaloop()">Send via Mojaloop</button>
           </div>
+          <div id="sendMoneyMojaResult" class="result" style="display:none"></div>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" id="smBtn" onclick="sendMoney()">Send Money</button>
-        </div>
-        <div id="sendMoneyResult" class="result" style="display:none"></div>
       </div>
     </div>
 
@@ -423,34 +430,56 @@ async function getTransfer() {
   showResult('transferActionResult', data, status >= 400);
 }
 
-// SEND MONEY
+// SEND MONEY - Direct CBS
 async function sendMoney() {
   const btn = document.getElementById('smBtn');
   btn.disabled = true;
   btn.textContent = 'Sending...';
   const body = {
-    homeTransactionId: `ui-${Date.now()}`,
+    payerId: document.getElementById('smPayerId').value,
     payeeId: document.getElementById('smPayeeId').value,
+    amount: document.getElementById('smAmount').value,
+    currency: 'GMD',
+    note: document.getElementById('smNote').value || undefined,
+  };
+  const { status, data } = await apiCall(`${CBS_URL}/api/send-money`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'x-idempotency-key': crypto.randomUUID() },
+  });
+  showResult('sendMoneyResult', data, status >= 400);
+  btn.disabled = false;
+  btn.textContent = 'Send Money';
+}
+
+// SEND MONEY - Mojaloop flow
+async function sendMoneyMojaloop() {
+  const btn = document.getElementById('smMojaBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  const body = {
+    homeTransactionId: `ui-${Date.now()}`,
+    payeeId: document.getElementById('smMojaPayeeId').value,
     payeeIdType: 'MSISDN',
-    sendAmount: document.getElementById('smAmount').value,
+    sendAmount: document.getElementById('smMojaAmount').value,
     sendCurrency: 'GMD',
     receiveCurrency: 'GMD',
     transactionType: 'TRANSFER',
     payer: {
-      name: document.getElementById('smPayerName').value,
-      payerId: document.getElementById('smPayerId').value,
+      name: document.getElementById('smMojaPayerName').value,
+      payerId: document.getElementById('smMojaPayerId').value,
     },
   };
   try {
     const { status, data } = await apiCall(`${DFSP_URL}/send-money`, {
       method: 'POST', body: JSON.stringify(body),
     });
-    showResult('sendMoneyResult', data, status >= 400);
+    showResult('sendMoneyMojaResult', data, status >= 400);
   } catch (e) {
-    showResult('sendMoneyResult', `Error: ${e.message}. Is the Gisp connector running?`, true);
+    showResult('sendMoneyMojaResult', `Error: ${e.message}. Requires full Docker stack.`, true);
   }
   btn.disabled = false;
-  btn.textContent = 'Send Money';
+  btn.textContent = 'Send via Mojaloop';
 }
 
 // HISTORY

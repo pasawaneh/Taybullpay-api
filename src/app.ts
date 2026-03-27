@@ -7,6 +7,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 import accountsRouter from './routes/accounts';
 import quotesRouter from './routes/quotes';
 import transfersRouter from './routes/transfers';
+import sendmoneyRouter from './routes/sendmoney';
 import logger from './services/logger';
 
 const CONNECTOR_SDK_URL = process.env.CONNECTOR_SDK_URL || 'http://localhost:3003';
@@ -70,6 +71,7 @@ export function createApp() {
   app.use('/api/accounts', authenticate, accountsRouter);
   app.use('/api/quotes', authenticate, quotesRouter);
   app.use('/api/transfers', authenticate, transfersRouter);
+  app.use('/api/send-money', authenticate, sendmoneyRouter);
 
   // Global error handler (must be last)
   app.use(errorHandler);
