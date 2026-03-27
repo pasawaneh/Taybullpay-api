@@ -195,17 +195,10 @@
             "sendAmount": "250",
             "sendCurrency": "{$environment.CURRENCY}",
             "receiveCurrency": "{$environment.CURRENCY}",
-            "purposeCode": "payment",
             "transactionType": "TRANSFER",
             "payer": {
               "name": "Ebrima Sawaneh",
-              "payerId": "{$environment.SENDER_MSISDN}",
-              "DateAndPlaceOfBirth": {
-                "BirthDt": "1990-05-15",
-                "PrvcOfBirth": "West Coast",
-                "CityOfBirth": "Banjul",
-                "CtryOfBirth": "GM"
-              }
+              "payerId": "{$environment.SENDER_MSISDN}"
             }
           },
           "tests": {

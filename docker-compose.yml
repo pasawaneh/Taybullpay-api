@@ -156,10 +156,10 @@ services:
       REDIS__CONNECTION_URL: redis://redis:6379
       # Misc
       AUTO_ACCEPT_PARTY: true
-      AUTO_ACCEPT_QUOTES: false
+      AUTO_ACCEPT_QUOTES: true
       LOG_INDENT: 0
       ENABLE_BACKEND_EVENT_HANDLER: false
-      ENABLE_FSPIOP_EVENT_HANDLER: true
+      ENABLE_FSPIOP_EVENT_HANDLER: false
       WS_PORT: 4002
       VALIDATE_INBOUND_JWS: false
       JWS_SIGN: false
@@ -171,7 +171,7 @@ services:
       REJECT_TRANSFERS_ON_EXPIRED_QUOTES: false
       REJECT_EXPIRED_TRANSFER_FULFILS: false
       RESERVE_NOTIFICATION: true
-      RESOURCE_VERSIONS: "parties=1.1,quotes=1.0,transfers=1.0"
+      RESOURCE_VERSIONS: "parties=2.0,quotes=2.0,transfers=2.0"
       ID_GENERATOR: '{"type":"uuid","version":4}'
       KAFKA__DOMAIN_EVENTS__PRODUCER__KAFKA__CLIENT_ID: sdk-scheme-adapter
       KAFKA__DOMAIN_EVENTS__PRODUCER__KAFKA__BROKERS: '["kafka:9092"]'

@@ -4,8 +4,8 @@
     "priority": 1,
     "description": "GET /parties - Return Essa Jabang as the remote payee",
     "apiVersion": {
-      "minorVersion": 1,
-      "majorVersion": 1,
+      "minorVersion": 0,
+      "majorVersion": 2,
       "type": "fspiop",
       "asynchronous": true
     },
@@ -21,10 +21,10 @@
         "method": "put",
         "path": "/parties/{$request.params.Type}/{$request.params.ID}",
         "headers": {
-          "Content-Type": "application/vnd.interoperability.parties+json;version=1.1",
+          "Content-Type": "application/vnd.interoperability.parties+json;version=2.0",
           "FSPIOP-Source": "ttksim",
           "FSPIOP-Destination": "{$request.headers.fspiop-source}",
-          "Date": "{$function.generic.curDate}"
+          "Date": "{$request.headers.date}"
         },
         "body": {
           "party": {
@@ -49,8 +49,8 @@
     "priority": 1,
     "description": "POST /quotes - Return a quote with fees in GMD",
     "apiVersion": {
-      "minorVersion": 1,
-      "majorVersion": 1,
+      "minorVersion": 0,
+      "majorVersion": 2,
       "type": "fspiop",
       "asynchronous": true
     },
@@ -66,19 +66,19 @@
         "method": "put",
         "path": "/quotes/{$request.body.quoteId}",
         "headers": {
-          "Content-Type": "application/vnd.interoperability.quotes+json;version=1.1",
+          "Content-Type": "application/vnd.interoperability.quotes+json;version=2.0",
           "FSPIOP-Source": "ttksim",
           "FSPIOP-Destination": "{$request.headers.fspiop-source}",
-          "Date": "{$function.generic.curDate}"
+          "Date": "{$request.headers.date}"
         },
         "body": {
           "transferAmount": { "amount": "{$request.body.amount.amount}", "currency": "{$request.body.amount.currency}" },
           "payeeFspFee": { "amount": "1", "currency": "{$request.body.amount.currency}" },
           "payeeFspCommission": { "amount": "0", "currency": "{$request.body.amount.currency}" },
           "payeeReceiveAmount": { "amount": "{$request.body.amount.amount}", "currency": "{$request.body.amount.currency}" },
-          "expiration": "{$function.generic.futureDate}",
-          "ilpPacket": "{$function.generic.ilpPacket}",
-          "condition": "{$function.generic.ilpCondition}"
+          "expiration": "2027-12-31T00:00:00.000Z",
+          "ilpPacket": "AYICbQAAAAAAAAPoHGcuZ3JlZW5iYW5rZnNwLm1zaXNkbi4yNzcxMzgwNDGCAjV7InRyYW5zYWN0aW9uSWQiOiIyZGY3NzRlMi1mMTA5LTExZTgtOTBhZC0wMjQyMDRkMmRlNDQiLCJxdW90ZUlkIjoiMTFkZjg1NjAtZjEwOS0xMWU4LTkwYWQtMDI0MjA0ZDJkZTQ0IiwicGF5ZWUiOnsicGFydHlJZEluZm8iOnsicGFydHlJZFR5cGUiOiJNU0lTRE4iLCJwYXJ0eUlkZW50aWZpZXIiOiIyNzcxMzgwNDEiLCJmc3BJZCI6ImdyZWVuYmFua2ZzcCJ9fSwicGF5ZXIiOnsicGFydHlJZEluZm8iOnsicGFydHlJZFR5cGUiOiJNU0lTRE4iLCJwYXJ0eUlkZW50aWZpZXIiOiIyNzcxMzgwNDAiLCJmc3BJZCI6InBheWVyZnNwIn0sInBlcnNvbmFsSW5mbyI6eyJjb21wbGV4TmFtZSI6eyJmaXJzdE5hbWUiOiJNYXRzIiwibGFzdE5hbWUiOiJIYWdtYW4ifSwiZGF0ZU9mQmlydGgiOiIxOTgzLTEwLTI1In19LCJhbW91bnQiOnsiY3VycmVuY3kiOiJVU0QiLCJhbW91bnQiOiI5OCJ9LCJ0cmFuc2FjdGlvblR5cGUiOnsic2NlbmFyaW8iOiJERVBPU0lUIiwic3ViU2NlbmFyaW8iOiJERVBPU0lUIiwiaW5pdGlhdG9yIjoiUEFZRVIiLCJpbml0aWF0b3JUeXBlIjoiQ09OU1VNRVIiLCJyZWZ1bmRJbmZvIjp7fX19AA",
+          "condition": "HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks"
         },
         "delay": 200
       }
@@ -89,8 +89,8 @@
     "priority": 1,
     "description": "POST /transfers - Return transfer fulfilment (COMMITTED)",
     "apiVersion": {
-      "minorVersion": 1,
-      "majorVersion": 1,
+      "minorVersion": 0,
+      "majorVersion": 2,
       "type": "fspiop",
       "asynchronous": true
     },
@@ -106,15 +106,15 @@
         "method": "put",
         "path": "/transfers/{$request.body.transferId}",
         "headers": {
-          "Content-Type": "application/vnd.interoperability.transfers+json;version=1.1",
+          "Content-Type": "application/vnd.interoperability.transfers+json;version=2.0",
           "FSPIOP-Source": "ttksim",
           "FSPIOP-Destination": "{$request.headers.fspiop-source}",
-          "Date": "{$function.generic.curDate}"
+          "Date": "{$request.headers.date}"
         },
         "body": {
-          "fulfilment": "{$function.generic.ilpFulfilment}",
+          "fulfilment": "XoSz1cL0tljJSCp_VtIYmPNw-zFUgGfbUqf69AagUzY",
           "transferState": "COMMITTED",
-          "completedTimestamp": "{$function.generic.curDate}"
+          "completedTimestamp": "2026-12-31T00:00:00.000Z"
         },
         "delay": 200
       }
