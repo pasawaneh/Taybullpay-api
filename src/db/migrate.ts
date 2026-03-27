@@ -7,6 +7,7 @@ import { up as createTransfers } from './migrations/002_create_transfers';
 import { up as createQuotes } from './migrations/003_create_quotes';
 import { up as createRefunds } from './migrations/004_create_refunds';
 import { up as createIdempotencyKeys } from './migrations/005_create_idempotency_keys';
+import { up as createSettings } from './migrations/006_create_settings';
 
 const migrations = [
   { name: '001_create_accounts', up: createAccounts },
@@ -14,6 +15,7 @@ const migrations = [
   { name: '003_create_quotes', up: createQuotes },
   { name: '004_create_refunds', up: createRefunds },
   { name: '005_create_idempotency_keys', up: createIdempotencyKeys },
+  { name: '006_create_settings', up: createSettings },
 ];
 
 export async function runMigrations(): Promise<void> {

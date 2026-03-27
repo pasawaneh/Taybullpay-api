@@ -3,13 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { getPool } from '../db/connection';
 import * as accountRepo from '../repositories/accountRepository';
 import * as quoteRepo from '../repositories/quoteRepository';
+import * as settingsRepo from '../repositories/settingsRepository';
 import { idempotency } from '../middleware/idempotency';
 import logger from '../services/logger';
 
 const router = Router();
-
-const FEE_PERCENTAGE = 0.01;
-const COMMISSION_PERCENTAGE = 0.005;
 
 // POST /api/send-money - Full P2P transfer in one call
 router.post('/', idempotency, async (req: Request, res: Response, next: NextFunction) => {
@@ -83,9 +81,11 @@ router.post('/', idempotency, async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    // 3. Calculate fees
-    const feeAmount = Math.round(numericAmount * FEE_PERCENTAGE * 100) / 100;
-    const commissionAmount = Math.round(numericAmount * COMMISSION_PERCENTAGE * 100) / 100;
+    // 3. Calculate fees from settings
+    const feePercentage = await settingsRepo.getNumber('FEE_PERCENTAGE', 0.01);
+    const commissionPercentage = await settingsRepo.getNumber('COMMISSION_PERCENTAGE', 0.005);
+    const feeAmount = Math.round(numericAmount * feePercentage * 100) / 100;
+    const commissionAmount = Math.round(numericAmount * commissionPercentage * 100) / 100;
     const totalDebit = numericAmount + feeAmount;
 
     if (parseFloat(payerRow.balance) < totalDebit) {

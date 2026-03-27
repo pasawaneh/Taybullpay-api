@@ -5,12 +5,10 @@ import * as accountRepo from '../repositories/accountRepository';
 import { validateQuoteRequest } from '../middleware/validate';
 import { validateCurrency } from '../middleware/currencyValidation';
 import { idempotency } from '../middleware/idempotency';
+import * as settingsRepo from '../repositories/settingsRepository';
 import logger from '../services/logger';
 
 const router = Router();
-
-const FEE_PERCENTAGE = 0.01;
-const COMMISSION_PERCENTAGE = 0.005;
 
 // POST /quotes - Create a quote
 router.post('/', idempotency, validateQuoteRequest, validateCurrency, async (req: Request, res: Response, next: NextFunction) => {
@@ -27,8 +25,10 @@ router.post('/', idempotency, validateQuoteRequest, validateCurrency, async (req
       }
     }
 
-    const feeAmount = Math.round(numericAmount * FEE_PERCENTAGE * 100) / 100;
-    const commissionAmount = Math.round(numericAmount * COMMISSION_PERCENTAGE * 100) / 100;
+    const feePercentage = await settingsRepo.getNumber('FEE_PERCENTAGE', 0.01);
+    const commissionPercentage = await settingsRepo.getNumber('COMMISSION_PERCENTAGE', 0.005);
+    const feeAmount = Math.round(numericAmount * feePercentage * 100) / 100;
+    const commissionAmount = Math.round(numericAmount * commissionPercentage * 100) / 100;
     const transferAmount = numericAmount;
     const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 

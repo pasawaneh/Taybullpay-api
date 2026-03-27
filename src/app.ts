@@ -8,6 +8,7 @@ import accountsRouter from './routes/accounts';
 import quotesRouter from './routes/quotes';
 import transfersRouter from './routes/transfers';
 import sendmoneyRouter from './routes/sendmoney';
+import settingsRouter from './routes/settings';
 import logger from './services/logger';
 
 const CONNECTOR_SDK_URL = process.env.CONNECTOR_SDK_URL || 'http://localhost:3003';
@@ -120,6 +121,7 @@ export function createApp() {
   app.use('/api/quotes', authenticate, quotesRouter);
   app.use('/api/transfers', authenticate, transfersRouter);
   app.use('/api/send-money', authenticate, sendmoneyRouter);
+  app.use('/api/settings', authenticate, settingsRouter);
 
   // Global error handler (must be last)
   app.use(errorHandler);

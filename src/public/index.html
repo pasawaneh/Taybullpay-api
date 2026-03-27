@@ -86,6 +86,7 @@
       <div class="tab" data-tab="transfers">Transfers</div>
       <div class="tab" data-tab="sendmoney">Send Money</div>
       <div class="tab" data-tab="history">Transfer History</div>
+      <div class="tab" data-tab="settings">Settings</div>
     </div>
 
     <!-- ACCOUNTS -->
@@ -229,6 +230,18 @@
         <div id="historyResult"></div>
       </div>
     </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="section-title">Settings & Configuration</div>
+      <div class="info-bar">Configure fees, limits, environment, and connector settings. Changes take effect immediately.</div>
+      <div id="settingsContainer"></div>
+      <div class="btn-row" style="margin-top:20px">
+        <button class="btn btn-primary" onclick="loadSettings()">Reload</button>
+        <button class="btn btn-success" id="saveSettingsBtn" onclick="saveSettings()">Save All Changes</button>
+      </div>
+      <div id="settingsResult" class="result" style="display:none"></div>
+    </div>
   </div>
 
 <script>
@@ -258,6 +271,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+    if (tab.dataset.tab === 'settings') loadSettings();
   });
 });
 
@@ -512,6 +526,92 @@ async function loadHistory() {
     html += `<p style="margin-top:8px;font-size:12px;color:#94a3b8">Page ${data.pagination.page} of ${data.pagination.totalPages} (${data.pagination.total} total)</p>`;
   }
   document.getElementById('historyResult').innerHTML = html;
+}
+
+// SETTINGS
+const categoryLabels = {
+  fees: { title: 'Fee Configuration', icon: 'Fees & Charges' },
+  limits: { title: 'Transfer Limits', icon: 'Limits' },
+  environment: { title: 'Environment', icon: 'Environment' },
+  connector: { title: 'Connector URLs', icon: 'Mojaloop Connector' },
+  security: { title: 'Security', icon: 'Security' },
+};
+
+const categoryColors = {
+  fees: '#d97706',
+  limits: '#7c3aed',
+  environment: '#0d9488',
+  connector: '#2563eb',
+  security: '#dc2626',
+};
+
+async function loadSettings() {
+  const { data } = await apiCall(`${CBS_URL}/api/settings`);
+  const grouped = data.grouped || {};
+  let html = '<div class="grid">';
+
+  for (const [category, settings] of Object.entries(grouped)) {
+    const label = categoryLabels[category] || { title: category, icon: category };
+    const color = categoryColors[category] || '#5eead4';
+    html += `<div class="card">
+      <h3 style="color:${color}">${label.title}</h3>`;
+
+    for (const s of settings) {
+      const inputType = s.key.includes('PERCENTAGE') ? 'number' :
+                        s.key.includes('AMOUNT') || s.key.includes('LIMIT') || s.key.includes('MAX') || s.key.includes('MIN') ? 'number' : 'text';
+      const step = s.key.includes('PERCENTAGE') ? '0.001' : '1';
+
+      let inputHtml;
+      if (s.key === 'ENVIRONMENT') {
+        const isUAT = s.value === 'UAT';
+        inputHtml = `<select id="setting-${s.key}" class="setting-input" data-key="${s.key}">
+          <option value="UAT" ${isUAT ? 'selected' : ''}>UAT (Testing)</option>
+          <option value="PROD" ${!isUAT ? 'selected' : ''}>PROD (Production)</option>
+        </select>`;
+      } else if (s.key === 'IDEMPOTENCY_ENABLED') {
+        inputHtml = `<select id="setting-${s.key}" class="setting-input" data-key="${s.key}">
+          <option value="true" ${s.value === 'true' ? 'selected' : ''}>Enabled</option>
+          <option value="false" ${s.value !== 'true' ? 'selected' : ''}>Disabled</option>
+        </select>`;
+      } else {
+        inputHtml = `<input id="setting-${s.key}" type="${inputType}" step="${step}" value="${s.value}" class="setting-input" data-key="${s.key}">`;
+      }
+
+      html += `<div class="form-group">
+        <label>${s.key.replace(/_/g, ' ')}${s.description ? ' - ' + s.description : ''}</label>
+        ${inputHtml}
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  document.getElementById('settingsContainer').innerHTML = html;
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const inputs = document.querySelectorAll('.setting-input');
+  const updates = [];
+  inputs.forEach(input => {
+    updates.push({ key: input.dataset.key, value: input.value });
+  });
+
+  const { status, data } = await apiCall(`${CBS_URL}/api/settings`, {
+    method: 'PUT',
+    body: JSON.stringify({ updates }),
+  });
+
+  showResult('settingsResult', data, status >= 400);
+  btn.disabled = false;
+  btn.textContent = 'Save All Changes';
+
+  if (status < 400) {
+    await loadSettings();
+  }
 }
 
 // Auto-load accounts on start
