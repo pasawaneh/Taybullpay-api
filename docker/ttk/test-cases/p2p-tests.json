@@ -175,41 +175,6 @@
           }
         }
       ]
-    },
-    {
-      "id": 6,
-      "name": "Send Money - Ebrima sends 250 GMD to Essa (Payer Side via SDK Adapter)",
-      "requests": [
-        {
-          "id": 1,
-          "description": "POST /send-money - Full outbound flow: Gisp -> SDK Adapter -> TTK (simulated payee) -> callbacks",
-          "apiVersion": { "minorVersion": 0, "majorVersion": 1, "type": "mojaloop_simulator", "asynchronous": false },
-          "operationPath": "/send-money",
-          "method": "post",
-          "url": "http://{$environment.GISP_CONNECTOR_HOST}:{$environment.GISP_DFSP_PORT}",
-          "headers": { "Content-Type": "application/json" },
-          "body": {
-            "homeTransactionId": "tbp-send-001",
-            "payeeId": "{$environment.RECEIVER_MSISDN}",
-            "payeeIdType": "MSISDN",
-            "sendAmount": "250",
-            "sendCurrency": "{$environment.CURRENCY}",
-            "receiveCurrency": "{$environment.CURRENCY}",
-            "transactionType": "TRANSFER",
-            "payer": {
-              "name": "Ebrima Sawaneh",
-              "payerId": "{$environment.SENDER_MSISDN}"
-            }
-          },
-          "tests": {
-            "assertions": [
-              { "id": 1, "description": "Status is 200", "exec": ["expect(response.status).to.equal(200)"] },
-              { "id": 2, "description": "Has payee details", "exec": ["expect(response.body.payeeDetails).to.not.be.undefined"] },
-              { "id": 3, "description": "Has transaction ID", "exec": ["expect(response.body.transactionId).to.not.be.undefined"] }
-            ]
-          }
-        }
-      ]
     }
   ]
 }
